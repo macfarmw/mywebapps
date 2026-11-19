@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thai Listening Quiz</title>
+<style>
+  :root {
+    --purple: #6d4aff;
+    --purple-light: #efecff;
+    --purple-dark: #5535cc;
+    --green: #1a9e5c;
+    --red: #d64545;
+    --bg: #f7f6fb;
+    --text: #23212b;
+    --muted: #6f6c7a;
+    --border: #e4e1ee;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .app {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  header {
+    background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+    color: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 6px 24px rgba(109,74,255,.25);
+  }
+  header h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  header p { opacity: .85; font-size: .9rem; }
+  .stats {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    background: rgba(255,255,255,.15);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: .85rem;
+    backdrop-filter: blur(4px);
+  }
+  .stat b { font-size: 1.05rem; display: block; }
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  select, button {
+    font: inherit;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  select {
+    padding: 10px 14px;
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-secondary {
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 16px;
+    font-weight: 600;
+    transition: background .15s;
+  }
+  .btn-secondary:hover { background: var(--purple-light); }
+  .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(35,33,43,.05);
+  }
+  .thai-big {
+    font-size: 2.2rem;
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .romanization {
+    color: var(--muted);
+    font-size: .95rem;
+    margin-bottom: 18px;
+    visibility: hidden;
+    min-height: 1.3em;
+  }
+  .romanization.show { visibility: visible; }
+  .play-controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+  .play-btn {
+    background: var(--purple);
+    color: #fff;
+    padding: 12px 24px;
+    font-weight: 700;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background .15s, transform .1s;
+  }
+  .play-btn:hover { background: var(--purple-dark); }
+  .play-btn:active { transform: scale(.97); }
+  .play-btn.small { background: #fff; color: var(--purple); border: 1px solid var(--purple); padding: 12px 18px; font-weight: 600; }
+  .play-btn.small:hover { background: var(--purple-light); }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .choices { grid-template-columns: 1fr; } }
+  .choice {
+    background: #fff;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    text-align: left;
+    font-size: .95rem;
+    color: var(--text);
+    transition: border-color .15s, background .15s;
+    line-height: 1.4;
+  }
+  .choice:hover:not(:disabled) { border-color: var(--purple); background: var(--purple-light); }
+  .choice.correct { border-color: var(--green); background: #e8f7ef; }
+  .choice.wrong { border-color: var(--red); background: #fdeeee; }
+  .choice:disabled { cursor: default; opacity: .85; }
+  .feedback {
+    margin-top: 16px;
+    font-weight: 700;
+    min-height: 1.4em;
+    font-size: 1rem;
+  }
+  .feedback.ok { color: var(--green); }
+  .feedback.no { color: var(--red); }
+  .next-btn {
+    margin-top: 16px;
+    background: var(--purple);
+    color: #fff;
+    padding: 12px 28px;
+    font-weight: 700;
+    font-size: 1rem;
+    display: none;
+  }
+  .next-btn:hover { background: var(--purple-dark); }
+  .complete-msg { font-size: 1.1rem; font-weight: 600; }
+  .hint { color: var(--muted); font-size: .85rem; margin-top: 14px; }
+  .replay-count { font-size: .8rem; color: var(--muted); margin-left: 8px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🇹🇭 Thai Listening Quiz</h1>
+    <p>Listen to a Thai phrase, then pick the correct English translation.</p>
+    <div class="stats">
+      <div class="stat">Question<b id="qnum">1</b></div>
+      <div class="stat">Score<b id="score">0</b></div>
+      <div class="stat">Correct<b id="correctCount">0</b></div>
+      <div class="stat">Streak 🔥<b id="streak">0</b></div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <select id="categorySelect">
+      <option value="all">All phrases</option>
+      <option value="greetings">Greetings &amp; basics</option>
+      <option value="shopping">Shopping &amp; money</option>
+      <option value="questions">Questions</option>
+      <option value="conversation">Conversation</option>
+      <option value="food">Food &amp; eating</option>
+      <option value="directions">Directions &amp; travel</option>
+    </select>
+    <button class="btn-secondary" id="revealToggle">Romanization: OFF</button>
+    <button class="btn-secondary" id="restartBtn">Restart</button>
+  </div>
+
+  <div class="card" id="quizCard">
+    <div class="thai-big" id="thaiText">—</div>
+    <div class="romanization" id="romText"></div>
+    <div class="play-controls">
+      <button class="play-btn" id="playBtn">▶ Play audio</button>
+      <button class="play-btn small" id="slowBtn">🐢 Slow</button>
+    </div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="nextBtn">Next question →</button>
+    <div class="hint" id="statusHint"></div>
+  </div>
+</div>
+
+<script>
+// ---- Phrase data (Thai, romanization, English, category) ----
+const PHRASES = [
+  // Greetings & basics
+  { th: "สวัสดีครับ", rom: "sà-wàt-dee kráp", en: "Hello", cat: "greetings" },
+  { th: "สวัสดีค่ะ", rom: "sà-wàt-dee kâ", en: "Hello (female speaker)", cat: "greetings" },
+  { th: "ขอบคุณครับ", rom: "kǒrp-khun kráp", en: "Thank you", cat: "greetings" },
+  { th: "ไม่เป็นไร", rom: "mâi bpen rai", en: "Never mind / it's okay", cat: "greetings" },
+  { th: "ลาก่อน", rom: "laa gòn", en: "Goodbye", cat: "greetings" },
+  { th: "สบายดีไหม", rom: "sà-baai dee mǎi", en: "How are you?", cat: "greetings" },
+  { th: "ฝันดี", rom: "fǎn dii", en: "Sweet dreams / good night", cat: "greetings" },
+  { th: "ขอโทษครับ", rom: "kǒr-thôot kráp", en: "Sorry / excuse me", cat: "greetings" },
+
+  // Shopping & money
+  { th: "ราคาเท่าไหร่", rom: "raa-khaa thâo-rài", en: "How much does it cost?", cat: "shopping" },
+  { th: "แพงไป", rom: "phēeng bpai", en: "Too expensive", cat: "shopping" },
+  { th: "ลดหน่อยได้ไหม", rom: "lót nòi dâi mǎi", en: "Can you lower the price a bit?", cat: "shopping" },
+  { th: "ถูกกว่านี้มีไหม", rom: "thùuk gwàa níi mii mǎi", en: "Do you have anything cheaper?", cat: "shopping" },
+  { th: "ผมจะซื้ออันนี้", rom: "phǒrm jà súe án níi", en: "I'll buy this one", cat: "shopping" },
+  { th: "รับบัตรเครดิตไหม", rom: "ráp bàt khree-dìt mǎi", en: "Do you accept credit cards?", cat: "shopping" },
+  { th: "ที่นี่ขายอะไร", rom: "thîi nîi khǎi à-rai", en: "What do you sell here?", cat: "shopping" },
+
+  // Questions
+  { th: "เมื่อไหร่", rom: "mûuea-rài", en: "When?", cat: "questions" },
+  { th: "ที่ไหน", rom: "thîi nǎi", en: "Where?", cat: "questions" },
+  { th: "กี่โมง", rom: "gìi moong", en: "What time is it?", cat: "questions" },
+  { th: "ใคร", rom: "khrai", en: "Who?", cat: "questions" },
+  { th: "อะไร", rom: "à-rai", en: "What?", cat: "questions" },
+  { th: "ทำไม", rom: "tham-mai", en: "Why?", cat: "questions" },
+  { th: "คุณชื่ออะไร", rom: "khun chûue à-rai", en: "What is your name?", cat: "questions" },
+  { th: "ห้องน้ำอยู่ที่ไหน", rom: "hông náam yùu thîi nǎi", en: "Where is the bathroom?", cat: "questions" },
+
+  // Conversation
+  { th: "พูดไทยไม่ได้", rom: "pûut thai mâi dâi", en: "I can't speak Thai", cat: "conversation" },
+  { th: "พูดอังกฤษได้ไหม", rom: "pûut ang-grìt dâi mǎi", en: "Can you speak English?", cat: "conversation" },
+  { th: "พูดช้าๆหน่อย", rom: "pûut cháa-cháa nòi", en: "Please speak slowly", cat: "conversation" },
+  { th: "ไม่เข้าใจ", rom: "mâi khâo-jai", en: "I don't understand", cat: "conversation" },
+  { th: "เข้าใจแล้ว", rom: "khâo-jai lǽeo", en: "I understand now", cat: "conversation" },
+  { th: "พูดอีกครั้งได้ไหม", rom: "pûut ìik kráng dâi mǎi", en: "Could you say that again?", cat: "conversation" },
+  { th: "ผมมาจากอเมริกา", rom: "phǒrm maa jàak à-mee-rí-gaa", en: "I come from America", cat: "conversation" },
+  { th: "คุณโสดไหม", rom: "khun sòot mǎi", en: "Are you single?", cat: "conversation" },
+  { th: "ไม่เป็นไรครับ", rom: "mâi bpen rai kráp", en: "You're welcome", cat: "conversation" },
+
+  // Food & eating
+  { th: "หิวข้าว", rom: "hǐu khâao", en: "I'm hungry", cat: "food" },
+  { th: "อร่อยมาก", rom: "à-ròi mâak", en: "Very delicious", cat: "food" },
+  { th: "ไม่อร่อย", rom: "mâi à-ròi", en: "Not delicious", cat: "food" },
+  { th: "เผ็ดไป", rom: "phèt bpai", en: "Too spicy", cat: "food" },
+  { th: "ไม่ใส่ผงชูรส", rom: "mâi sài phǒng chuu-rót", en: "No MSG please", cat: "food" },
+  { th: "ขอเบียร์หนึ่งขวด", rom: "kǒr bia nèung khùuat", en: "One bottle of beer, please", cat: "food" },
+  { th: "ขอเช็กบิล", rom: "kǒr chék bit", en: "The bill, please", cat: "food" },
+  { th: "กินข้าวก่อน", rom: "gin khâao gòrn", en: "Let's eat first / go eat before", cat: "food" },
+
+  // Directions & travel
+  { th: "ไปสนามบินยังไง", rom: "bpai sà-nǎam-bin yang ngai", en: "How do I get to the airport?", cat: "directions" },
+  { th: "ซ้าย", rom: "sáai", en: "Left", cat: "directions" },
+  { th: "ขวา", rom: "khwǎa", en: "Right", cat: "directions" },
+  { th: "ตรงไป", rom: "dtrong bpai", en: "Go straight ahead", cat: "directions" },
+  { th: "หยุดตรงนี้", rom: "yùt dtrong níi", en: "Stop here", cat: "directions" },
+  { th: "โรงแรมอยู่ไกลไหม", rom: "roong-raem yùu glai mǎi", en: "Is the hotel far?", cat: "directions" },
+  { th: "พาผมไปที่นี่ได้ไหม", rom: "phaa phǒrm bpai thîi nîi dâi mǎi", en: "Can you take me here? (pointing)", cat: "directions" },
+  { th: "สถานีรถไฟอยู่ที่ไหน", rom: "sà-thǎa-nii rót fai yùu thîi nǎi", en: "Where is the train station?", cat: "directions" }
+];
+
+// ---- State ----
+let queue = [];
+let current = null;
+let questionIndex = 0;
+let score = 0;
+let correctCount = 0;
+let streak = 0;
+let answered = false;
+let showRom = false;
+
+// ---- DOM ----
+const els = {
+  qnum: document.getElementById('qnum'),
+  score: document.getElementById('score'),
+  correctCount: document.getElementById('correctCount'),
+  streak: document.getElementById('streak'),
+  thaiText: document.getElementById('thaiText'),
+  romText: document.getElementById('romText'),
+  playBtn: document.getElementById('playBtn'),
+  slowBtn: document.getElementById('slowBtn'),
+  choices: document.getElementById('choices'),
+  feedback: document.getElementById('feedback'),
+  nextBtn: document.getElementById('nextBtn'),
+  categorySelect: document.getElementById('categorySelect'),
+  revealToggle: document.getElementById('revealToggle'),
+  restartBtn: document.getElementById('restartBtn'),
+  quizCard: document.getElementById('quizCard'),
+  statusHint: document.getElementById('statusHint')
+};
+
+// ---- Speech synthesis ----
+function speak(text, rate) {
+  if (!('speechSynthesis' in window)) {
+    els.statusHint.textContent = "⚠ Your browser does not support speech synthesis — Thai audio won't play.";
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'th-TH';
+  u.rate = rate || 0.9;
+  // try to find a Thai voice
+  const voices = window.speechSynthesis.getVoices();
+  const thaiVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('th'));
+  if (thaiVoice) u.voice = thaiVoice;
+  else {
+    els.statusHint.textContent = "⚠ No Thai voice found on this device — install a Thai TTS voice for correct pronunciation.";
+  }
+  window.speechSynthesis.speak(u);
+}
+
+// warm up voice list (loads asynchronously in some browsers)
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => {};
+}
+
+// ---- Game logic ----
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startGame() {
+  const cat = els.categorySelect.value;
+  const pool = cat === 'all' ? PHRASES : PHRASES.filter(p => p.cat === cat);
+  queue = shuffle(pool);
+  questionIndex = 0;
+  score = 0;
+  correctCount = 0;
+  streak = 0;
+  updateStats();
+  nextQuestion();
+}
+
+function nextQuestion() {
+  answered = false;
+  els.feedback.textContent = '';
+  els.feedback.className = 'feedback';
+  els.nextBtn.style.display = 'none';
+
+  if (questionIndex >= queue.length) {
+    const pct = queue.length ? Math.round(correctCount / queue.length * 100) : 0;
+    els.thaiText.textContent = '🎉';
+    els.romText.textContent = '';
+    els.choices.innerHTML = '';
+    els.playBtn.disabled = true;
+    els.slowBtn.disabled = true;
+    els.feedback.className = 'feedback ok';
+    els.feedback.textContent = `Round complete! ${correctCount}/${queue.length} correct (${pct}%). Press Restart to go again.`;
+    return;
+  }
+  els.playBtn.disabled = false;
+  els.slowBtn.disabled = false;
+
+  current = queue[questionIndex];
+  els.thaiText.textContent = current.th;
+  els.romText.textContent = current.rom;
+  els.romText.classList.toggle('show', showRom);
+
+  // Build 4 choices: correct + 3 distractors from same category if possible
+  const sameCat = PHRASES.filter(p => p !== current && p.cat === current.cat);
+  const others = PHRASES.filter(p => p !== current);
+  let distractorPool = shuffle(sameCat);
+  if (distractorPool.length < 3) {
+    const extra = shuffle(others.filter(p => !distractorPool.includes(p)));
+    distractorPool = distractorPool.concat(extra);
+  }
+  const distractors = distractorPool.slice(0, 3);
+  const options = shuffle([current, ...distractors]);
+
+  els.choices.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.textContent = opt.en;
+    btn.onclick = () => chooseAnswer(btn, opt);
+    els.choices.appendChild(btn);
+  });
+
+  // Auto-play the phrase
+  setTimeout(() => speak(current.th), 350);
+}
+
+function chooseAnswer(btn, opt) {
+  if (answered) return;
+  answered = true;
+
+  const buttons = els.choices.querySelectorAll('.choice');
+  buttons.forEach(b => {
+    b.disabled = true;
+    if (b.textContent === current.en) b.classList.add('correct');
+  });
+
+  if (opt === current) {
+    streak++;
+    correctCount++;
+    score += 10 + Math.min(streak, 5) * 2; // streak bonus
+    els.feedback.className = 'feedback ok';
+    els.feedback.textContent = '✓ Correct!';
+  } else {
+    btn.classList.add('wrong');
+    streak = 0;
+    els.feedback.className = 'feedback no';
+    els.feedback.textContent = `✗ The correct answer was: "${current.en}"`;
+  }
+
+  updateStats();
+  els.nextBtn.style.display = 'inline-block';
+}
+
+function updateStats() {
+  els.qnum.textContent = Math.min(questionIndex + 1, queue.length);
+  els.score.textContent = score;
+  els.correctCount.textContent = `${correctCount}/${queue.length}`;
+  els.streak.textContent = streak;
+}
+
+// ---- Events ----
+els.playBtn.onclick = () => { if (current) speak(current.th); };
+els.slowBtn.onclick = () => { if (current) speak(current.th, 0.55); };
+els.nextBtn.onclick = () => { questionIndex++; updateStats(); nextQuestion(); };
+els.restartBtn.onclick = startGame;
+els.categorySelect.onchange = startGame;
+els.revealToggle.onclick = () => {
+  showRom = !showRom;
+  els.revealToggle.textContent = 'Romanization: ' + (showRom ? 'ON' : 'OFF');
+  els.romText.classList.toggle('show', showRom);
+};
+
+startGame();
+</script>
+</body>
+</html>

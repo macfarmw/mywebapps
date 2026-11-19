@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ฝึกฟังเลขไทย · Thai Number Listening Practice</title>
+<style>
+  :root {
+    --purple: #6d4aff;
+    --purple-dark: #5636d9;
+    --purple-light: #efeaff;
+    --green: #2ba55c;
+    --red: #d64545;
+    --bg: #f7f6fb;
+    --card: #ffffff;
+    --text: #241f35;
+    --muted: #7a7490;
+    --border: #e6e2f2;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Noto Sans Thai', Tahoma, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .app { width: 100%; max-width: 640px; }
+  header { text-align: center; margin-bottom: 20px; }
+  header h1 { font-size: 1.5rem; color: var(--purple-dark); }
+  header p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(109, 74, 255, 0.06);
+  }
+
+  /* Settings row */
+  .settings { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  .field { flex: 1; min-width: 160px; }
+  .field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  select, input[type="range"] { width: 100%; }
+  select {
+    padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+    font-size: 0.95rem; background: #fff; color: var(--text); cursor: pointer;
+  }
+  .rate-value { font-size: 0.85rem; color: var(--purple-dark); font-weight: 600; margin-left: 8px; }
+
+  /* Practice area */
+  .play-row { display: flex; gap: 12px; justify-content: center; margin-bottom: 18px; }
+  button { font-family: inherit; cursor: pointer; border: none; border-radius: 12px; font-weight: 600; transition: transform 0.08s, box-shadow 0.15s; }
+  button:active { transform: scale(0.97); }
+  .btn-play {
+    background: var(--purple); color: #fff; font-size: 1.05rem;
+    padding: 14px 28px; display: inline-flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 14px rgba(109, 74, 255, 0.35);
+  }
+  .btn-play:hover { background: var(--purple-dark); }
+  .btn-repeat {
+    background: var(--purple-light); color: var(--purple-dark);
+    padding: 14px 20px; font-size: 1.05rem; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-repeat:hover { background: #e2daff; }
+
+  .answer-row { display: flex; gap: 12px; }
+  #answerInput {
+    flex: 1; padding: 14px 16px; font-size: 1.4rem; text-align: center;
+    border: 2px solid var(--border); border-radius: 12px; outline: none;
+    letter-spacing: 0.05em; transition: border-color 0.15s;
+  }
+  #answerInput:focus { border-color: var(--purple); }
+  #answerInput.correct { border-color: var(--green); background: #effaf3; }
+  #answerInput.wrong { border-color: var(--red); background: #fdf1f1; }
+  .btn-submit {
+    background: var(--purple); color: #fff; padding: 14px 26px; font-size: 1rem;
+  }
+  .btn-submit:hover { background: var(--purple-dark); }
+
+  #feedback {
+    text-align: center; margin-top: 16px; min-height: 54px; font-size: 1rem;
+  }
+  #feedback .fb-correct { color: var(--green); font-weight: 700; font-size: 1.1rem; }
+  #feedback .fb-wrong { color: var(--red); font-weight: 700; font-size: 1.1rem; }
+  #feedback .fb-answer { color: var(--text); margin-top: 4px; font-size: 1.05rem; }
+  #feedback .fb-thai { color: var(--purple-dark); font-weight: 600; margin-left: 8px; }
+
+  .hint { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 10px; }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat {
+    background: var(--purple-light); border-radius: 12px; padding: 12px 8px; text-align: center;
+  }
+  .stat .num { font-size: 1.35rem; font-weight: 800; color: var(--purple-dark); }
+  .stat .lbl { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+  .per-diff { margin-top: 6px; }
+  .per-diff h3 { font-size: 0.85rem; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .diff-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.85rem; }
+  .diff-row .name { width: 110px; color: var(--text); }
+  .bar-track { flex: 1; height: 10px; background: var(--border); border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--purple); border-radius: 6px; transition: width 0.4s; }
+  .diff-row .pct { width: 90px; text-align: right; color: var(--muted); }
+
+  .footer-row { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+  .btn-reset { background: none; color: var(--red); font-size: 0.82rem; padding: 6px 10px; }
+  .btn-reset:hover { text-decoration: underline; }
+  .stored-note { color: var(--muted); font-size: 0.75rem; }
+
+  #voiceWarning {
+    background: #fff6e5; border: 1px solid #f0d9a8; color: #8a6a1f;
+    padding: 10px 14px; border-radius: 10px; font-size: 0.85rem; margin-bottom: 16px; display: none;
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .answer-row { flex-direction: column; }
+    .play-row { flex-direction: column; }
+    .btn-play, .btn-repeat { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🎧 ฝึกฟังเลขไทย</h1>
+    <p>Thai Number Listening Practice — listen, type the number, get instant feedback.</p>
+  </header>
+
+  <div id="voiceWarning">⚠️ No Thai (th-TH) voice was found in this browser. The number may be read with an unsuitable voice or not at all. Try Chrome, Edge, or install a Thai voice pack.</div>
+
+  <div class="card">
+    <div class="settings">
+      <div class="field">
+        <label for="difficulty">ความยาก · Difficulty</label>
+        <select id="difficulty">
+          <option value="1">1 หลัก · 0–9</option>
+          <option value="2" selected>2 หลัก · 10–99</option>
+          <option value="3">3 หลัก · 100–999</option>
+          <option value="4">4 หลัก · 1,000–9,999</option>
+          <option value="5">5 หลัก · 10,000–99,999</option>
+          <option value="mix">ผสม · Mixed (1–5 หลัก)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="rate">ความเร็วเสียง · Speed <span class="rate-value" id="rateValue">1.0×</span></label>
+        <input type="range" id="rate" min="0.5" max="1.5" step="0.1" value="1">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="play-row">
+      <button class="btn-play" id="btnPlay">🔊 เล่นเลขใหม่ · Play new number</button>
+      <button class="btn-repeat" id="btnRepeat">🔁 ซ้ำ · Repeat</button>
+    </div>
+    <div class="answer-row">
+      <input type="text" id="answerInput" inputmode="numeric" placeholder="พิมพ์ตัวเลขที่ได้ยิน…" autocomplete="off">
+      <button class="btn-submit" id="btnSubmit">ตรวจ · Check</button>
+    </div>
+    <div id="feedback"></div>
+    <div class="hint">Type Arabic (123) or Thai (๑๒๓) digits · Enter = Check · Shift+Enter = Repeat</div>
+  </div>
+
+  <div class="card">
+    <div class="stats-grid">
+      <div class="stat"><div class="num" id="statAttempts">0</div><div class="lbl">Attempts</div></div>
+      <div class="stat"><div class="num" id="statAccuracy">—</div><div class="lbl">Accuracy</div></div>
+      <div class="stat"><div class="num" id="statStreak">0</div><div class="lbl">Streak 🔥</div></div>
+      <div class="stat"><div class="num" id="statBest">0</div><div class="lbl">Best streak</div></div>
+    </div>
+    <div class="per-diff">
+      <h3>ความแม่นยำแต่ละระดับ · Accuracy by difficulty</h3>
+      <div id="diffBars"></div>
+    </div>
+    <div class="footer-row">
+      <span class="stored-note">💾 Progress saved in this browser (localStorage)</span>
+      <button class="btn-reset" id="btnReset">รีเซ็ตความคืบหน้า · Reset progress</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Storage ---------- */
+  var STORE_KEY = "thaiNumbersPractice.v1";
+  var DIFF_LABELS = { "1": "0–9", "2": "10–99", "3": "100–999", "4": "1,000–9,999", "5": "10,000+" };
+  var DEFAULT_STATS = {
+    total: 0,
+    correct: 0,
+    streak: 0,
+    best: 0,
+    byDiff: { "1": { t: 0, c: 0 }, "2": { t: 0, c: 0 }, "3": { t: 0, c: 0 }, "4": { t: 0, c: 0 }, "5": { t: 0, c: 0 } }
+  };
+
+  function loadStats() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATS));
+      var s = JSON.parse(raw);
+      // migrate/repair missing keys
+      var merged = JSON.parse(JSON.stringify(DEFAULT_STATS));
+      merged.total = s.total || 0;
+      merged.correct = s.correct || 0;
+      merged.streak = s.streak || 0;
+      merged.best = s.best || 0;
+      for (var k in merged.byDiff) {
+        if (s.byDiff && s.byDiff[k]) { merged.byDiff[k].t = s.byDiff[k].t || 0; merged.byDiff[k].c = s.byDiff[k].c || 0; }
+      }
+      return merged;
+    } catch (e) {
+      return JSON.parse(JSON.stringify(DEFAULT_STATS));
+    }
+  }
+
+  var stats = loadStats();
+
+  function saveStats() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(stats)); } catch (e) { /* storage unavailable */ }
+  }
+
+  /* ---------- Thai number reading ---------- */
+  var THAI_DIGITS = ["ศูนย์", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+  var POSITIONS = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน"];
+
+  function thaiNumberToWords(n) {
+    n = Math.floor(Math.abs(n));
+    if (n === 0) return THAI_DIGITS[0];
+    var result = "";
+    var millions = 0;
+    var rest = n;
+    while (rest > 0) {
+      var chunk = rest % 1000000;
+      if (chunk > 0) {
+        var s = String(chunk);
+        var chunkStr = "";
+        for (var i = 0; i < s.length; i++) {
+          var d = +s[i];
+          var posIdx = s.length - 1 - i;
+          if (d === 0) continue;
+          if (posIdx === 1) {           // tens
+            if (d === 1) chunkStr += "สิบ";
+            else if (d === 2) chunkStr += "ยี่สิบ";
+            else chunkStr += THAI_DIGITS[d] + "สิบ";
+          } else if (posIdx === 0) {    // ones
+            if (d === 1 && s.length > 1) chunkStr += "เอ็ด";
+            else chunkStr += THAI_DIGITS[d];
+          } else {
+            chunkStr += THAI_DIGITS[d] + POSITIONS[posIdx];
+          }
+        }
+        result = chunkStr + (millions > 0 ? "ล้าน" : "") + result;
+      }
+      millions++;
+      rest = Math.floor(rest / 1000000);
+    }
+    return result;
+  }
+
+  function toThaiDigits(n) {
+    var th = "๐๑๒๓๔๕๖๗๘๙";
+    return String(n).replace(/[0-9]/g, function (d) { return th[+d]; });
+  }
+
+  /* ---------- Speech ---------- */
+  var synth = window.speechSynthesis;
+  var thaiVoice = null;
+
+  function pickVoice() {
+    if (!synth) return;
+    var voices = synth.getVoices();
+    thaiVoice = null;
+    for (var i = 0; i < voices.length; i++) {
+      var lang = (voices[i].lang || "").toLowerCase();
+      if (lang.indexOf("th") === 0) { thaiVoice = voices[i]; break; }
+    }
+    document.getElementById("voiceWarning").style.display = thaiVoice ? "none" : "block";
+  }
+  if (synth) {
+    pickVoice();
+    if (typeof synth.onvoiceschanged !== "undefined") synth.onvoiceschanged = pickVoice;
+  } else {
+    document.getElementById("voiceWarning").textContent =
+      "⚠️ This browser does not support speech synthesis. Please use a modern browser.";
+    document.getElementById("voiceWarning").style.display = "block";
+  }
+
+  function speakThai(text, rate) {
+    if (!synth) return;
+    synth.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = "th-TH";
+    if (thaiVoice) u.voice = thaiVoice;
+    u.rate = rate;
+    u.pitch = 1;
+    synth.speak(u);
+  }
+
+  /* ---------- Game state ---------- */
+  var currentNumber = null;
+  var answeredCurrent = false;
+
+  var elDifficulty = document.getElementById("difficulty");
+  var elRate = document.getElementById("rate");
+  var elRateValue = document.getElementById("rateValue");
+  var elInput = document.getElementById("answerInput");
+  var elFeedback = document.getElementById("feedback");
+
+  function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+  function newNumber() {
+    var d = elDifficulty.value;
+    var digits;
+    if (d === "mix") digits = randInt(1, 5);
+    else digits = parseInt(d, 10);
+    if (digits === 1) currentNumber = randInt(0, 9);
+    else currentNumber = randInt(Math.pow(10, digits - 1), Math.pow(10, digits) - 1);
+    answeredCurrent = false;
+    elFeedback.innerHTML = "";
+    elInput.classList.remove("correct", "wrong");
+    elInput.value = "";
+    playCurrent();
+    elInput.focus();
+  }
+
+  function playCurrent() {
+    if (currentNumber === null) return;
+    speakThai(thaiNumberToWords(currentNumber), parseFloat(elRate.value));
+  }
+
+  // normalize Thai digits and strip separators
+  function parseAnswer(str) {
+    str = (str || "").trim().replace(/[,.\s]/g, "");
+    var th = "๐๑๒๓๔๕๖๗๘๙";
+    str = str.replace(/[๐-๙]/g, function (c) { return String(th.indexOf(c)); });
+    if (!/^\d+$/.test(str)) return null;
+    return parseInt(str, 10);
+  }
+
+  function check() {
+    if (currentNumber === null || answeredCurrent) return;
+    var guess = parseAnswer(elInput.value);
+    if (guess === null) {
+      elFeedback.innerHTML = '<span style="color:var(--muted)">Please enter a number, e.g. 123 or ๑๒๓</span>';
+      return;
+    }
+    answeredCurrent = true;
+    var diffKey = elDifficulty.value === "mix" ? String(String(currentNumber).length) : elDifficulty.value;
+    stats.total++;
+    stats.byDiff[diffKey].t++;
+
+    if (guess === currentNumber) {
+      stats.correct++;
+      stats.streak++;
+      if (stats.streak > stats.best) stats.best = stats.streak;
+      stats.byDiff[diffKey].c++;
+      elInput.classList.add("correct");
+      elFeedback.innerHTML =
+        '<div class="fb-correct">✓ ถูกต้อง! Correct!</div>' +
+        '<div class="fb-answer">' + currentNumber.toLocaleString() + ' <span class="fb-thai">' + toThaiDigits(currentNumber) + '</span></div>';
+    } else {
+      stats.streak = 0;
+      elInput.classList.add("wrong");
+      elFeedback.innerHTML =
+        '<div class="fb-wrong">✗ ไม่ถูก — the number was ' + currentNumber.toLocaleString() +
+        ' <span class="fb-thai">' + toThaiDigits(currentNumber) + '</span></div>' +
+        '<div class="fb-answer" style="margin-top:4px;color:var(--muted)">You typed: ' + guess.toLocaleString() + '</div>';
+      // replay correct answer so the learner hears it again
+      setTimeout(function () { speakThai(thaiNumberToWords(currentNumber), parseFloat(elRate.value)); }, 900);
+    }
+    saveStats();
+    renderStats();
+    setTimeout(newNumber, 2600);
+  }
+
+  /* ---------- Render stats ---------- */
+  function renderStats() {
+    document.getElementById("statAttempts").textContent = stats.total;
+    document.getElementById("statAccuracy").textContent =
+      stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) + "%" : "—";
+    document.getElementById("statStreak").textContent = stats.streak;
+    document.getElementById("statBest").textContent = stats.best;
+
+    var bars = document.getElementById("diffBars");
+    bars.innerHTML = "";
+    Object.keys(DIFF_LABELS).forEach(function (k) {
+      var d = stats.byDiff[k];
+      var pct = d.t > 0 ? Math.round((d.c / d.t) * 100) : null;
+      var row = document.createElement("div");
+      row.className = "diff-row";
+      row.innerHTML =
+        '<span class="name">' + DIFF_LABELS[k] + '</span>' +
+        '<span class="bar-track"><span class="bar-fill" style="width:' + (pct === null ? 0 : pct) + '%"></span></span>' +
+        '<span class="pct">' + (pct === null ? "no data" : pct + "% (" + d.c + "/" + d.t + ")") + "</span>";
+      bars.appendChild(row);
+    });
+  }
+
+  /* ---------- Events ---------- */
+  document.getElementById("btnPlay").addEventListener("click", newNumber);
+  document.getElementById("btnRepeat").addEventListener("click", function () {
+    if (currentNumber === null) newNumber(); else playCurrent();
+    elInput.focus();
+  });
+  document.getElementById("btnSubmit").addEventListener("click", check);
+  elInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); check(); }
+    if (e.key === "Enter" && e.shiftKey) { e.preventDefault(); playCurrent(); }
+  });
+  elRate.addEventListener("input", function () {
+    elRateValue.textContent = parseFloat(elRate.value).toFixed(1) + "×";
+  });
+  document.getElementById("btnReset").addEventListener("click", function () {
+    if (!confirm("Reset all saved progress?")) return;
+    stats = JSON.parse(JSON.stringify(DEFAULT_STATS));
+    saveStats();
+    renderStats();
+  });
+
+  // Auto-start on load
+  renderStats();
+  window.addEventListener("load", function () { newNumber(); });
+})();
+</script>
+</body>
+</html>
